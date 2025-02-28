@@ -73,8 +73,8 @@ class DashboardScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             const Text('My Patients', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            _buildPatientCard(context, 'John Doe', '701', '65', 'High Priority', Colors.redAccent),
-            _buildPatientCard(context, 'Emma Wilson', '702', '45', 'Stable', Colors.greenAccent),
+            _buildPatientCard(context, 'John Doe', '701', '65', 'High Priority', Colors.redAccent, "Diabetes", "Improving", "BP: 130/85, HR: 78bpm"),
+            _buildPatientCard(context, 'Emma Wilson', '702', '45', 'Stable', Colors.greenAccent, "Hypertension", "Stable condition", "BP: 120/80, HR: 72bpm"),
             const SizedBox(height: 20),
             const Text('Upcoming Tasks', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             _buildTaskCard('Insulin Administration', '701', 'John Doe', '10:30 PM', Icons.medical_services),
@@ -106,7 +106,7 @@ class DashboardScreen extends StatelessWidget {
   }
 
   /// Widget for Patient Cards (Clickable)
-  Widget _buildPatientCard(BuildContext context, String name, String room, String age, String status, Color statusColor) {
+  Widget _buildPatientCard(BuildContext context, String name, String room, String age, String status, Color statusColor, String diagnosis, String progress, String vitals) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -118,6 +118,9 @@ class DashboardScreen extends StatelessWidget {
               age: age,
               status: status,
               statusColor: statusColor,
+              diagnosis: diagnosis,
+              progress: progress,
+              vitals: vitals,
             ),
           ),
         );
