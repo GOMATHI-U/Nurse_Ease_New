@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1265015426",
+    "project_id": "nurse-ease-fire",
+    "storage_bucket": "nurse-ease-fire.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1265015426:android:510a0c36732ceb51f8729b",
+        "android_client_info": {
+          "package_name": "com.example.nursingapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqV2vKp8-fG_DBjAIzqFJ521Wglw_TDjI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

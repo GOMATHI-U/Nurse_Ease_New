@@ -1,31 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'voice_notes_screen.dart';
 import 'patient_info_screen.dart';
 import 'tasks_screen.dart';
 import 'ai_help_screen.dart';
 import 'notification_screen.dart';
 import 'settings_screen.dart';
-
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Nursing Dashboard',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const DashboardScreen(),
-    );
-  }
-}
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -56,6 +36,10 @@ class DashboardScreen extends StatelessWidget {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showAddPatientDialog(context),
+        child: const Icon(Icons.add),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -73,19 +57,39 @@ class DashboardScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             const Text('My Patients', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            _buildPatientCard(context, 'John Doe', '701', '65', 'High Priority', Colors.redAccent, "Diabetes", "Improving", "BP: 130/85, HR: 78bpm"),
-            _buildPatientCard(context, 'Emma Wilson', '702', '45', 'Stable', Colors.greenAccent, "Hypertension", "Stable condition", "BP: 120/80, HR: 72bpm"),
-            const SizedBox(height: 20),
-            const Text('Upcoming Tasks', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            _buildTaskCard('Insulin Administration', '701', 'John Doe', '10:30 PM', Icons.medical_services),
-            _buildTaskCard('Vital Signs Check', '702', 'Emma Wilson', '11:00 PM', Icons.favorite_border),
+            Expanded(
+              child: StreamBuilder(
+                stream: FirebaseFirestore.instance.collection('patients').snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const CircularProgressIndicator();
+                  var patients = snapshot.data!.docs;
+                  return ListView.builder(
+                    itemCount: patients.length,
+                    itemBuilder: (context, index) {
+                      var patient = patients[index];
+                      return _buildPatientCard(
+                        context,
+                        patient.id,
+                        patient['name'],
+                        patient['room'],
+                        patient['age'].toString(),
+                        patient['status'],
+                        Colors.redAccent,
+                        patient['diagnosis'],
+                        patient['progress'],
+                        patient['vitals'],
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  /// Widget for Navigation Shortcuts
   Widget _buildShortcut(BuildContext context, IconData icon, String label, Color color, Widget screen) {
     return GestureDetector(
       onTap: () {
@@ -105,8 +109,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  /// Widget for Patient Cards (Clickable)
-  Widget _buildPatientCard(BuildContext context, String name, String room, String age, String status, Color statusColor, String diagnosis, String progress, String vitals) {
+  Widget _buildPatientCard(BuildContext context, String id, String name, String room, String age, String status, Color statusColor, String diagnosis, String progress, String vitals) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -129,27 +132,65 @@ class DashboardScreen extends StatelessWidget {
         child: ListTile(
           title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
           subtitle: Text('Room $room · Age $age'),
-          trailing: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(status, style: TextStyle(color: statusColor, fontWeight: FontWeight.bold)),
+          trailing: IconButton(
+            icon: const Icon(Icons.delete, color: Colors.red),
+            onPressed: () {
+              FirebaseFirestore.instance.collection('patients').doc(id).delete();
+            },
           ),
         ),
       ),
     );
   }
 
-  /// Widget for Task Cards
-  Widget _buildTaskCard(String title, String room, String patient, String time, IconData icon) {
-    return Card(
-      child: ListTile(
-        leading: Icon(icon, color: Colors.deepPurple),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text('Room $room · $patient · $time'),
-      ),
+  void _showAddPatientDialog(BuildContext context) {
+    final TextEditingController nameController = TextEditingController();
+    final TextEditingController roomController = TextEditingController();
+    final TextEditingController ageController = TextEditingController();
+    final TextEditingController diagnosisController = TextEditingController();
+    final TextEditingController progressController = TextEditingController();
+    final TextEditingController vitalsController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Add New Patient"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Name')),
+              TextField(controller: roomController, decoration: const InputDecoration(labelText: 'Room')),
+              TextField(controller: ageController, decoration: const InputDecoration(labelText: 'Age'), keyboardType: TextInputType.number),
+              TextField(controller: diagnosisController, decoration: const InputDecoration(labelText: 'Diagnosis')),
+              TextField(controller: progressController, decoration: const InputDecoration(labelText: 'Progress')),
+              TextField(controller: vitalsController, decoration: const InputDecoration(labelText: 'Vitals')),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                FirebaseFirestore.instance.collection('patients').add({
+                  'name': nameController.text,
+                  'room': roomController.text,
+                  'age': int.parse(ageController.text),
+                  'status': 'Stable',
+                  'diagnosis': diagnosisController.text,
+                  'progress': progressController.text,
+                  'vitals': vitalsController.text,
+                  'createdAt': FieldValue.serverTimestamp(),
+                });
+                Navigator.pop(context);
+              },
+              child: const Text("Add"),
+            ),
+          ],
+        );
+      },
     );
   }
 }

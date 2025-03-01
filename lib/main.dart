@@ -1,9 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'screens/dashboard_screen.dart';
-//import 'screens/patient_info_screen.dart';
-//import 'screens/voice_notes_screen.dart';
 
-void main() {
+// Firebase initialization
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try{
+  await Firebase.initializeApp(
+    options: FirebaseOptions(
+      apiKey: "AIzaSyCJ4lqQ2Vpj_kGBO1z3xHFIUS-KIQzaWak",
+      authDomain: "nurse-ease-fire.firebaseapp.com",
+      projectId: "nurse-ease-fire",
+      storageBucket: "nurse-ease-fire.firebasestorage.app",
+      messagingSenderId: "1265015426",
+      appId: "1:1265015426:web:fa91cd0d5e05701cf8729b",
+    ),
+  );
+  print("✅ Firebase successfully connected!");
+  } catch (e) {
+    print("❌ Firebase initialization failed: $e");
+  }
   runApp(const MyApp());
 }
 
@@ -21,7 +37,7 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => DashboardScreen(),
+        '/': (context) => const DashboardScreen(),
         //'/patientInfo': (context) => PatientInfoScreen(),
         //'/voiceNotes': (context) => VoiceNotesScreen(),
       },
