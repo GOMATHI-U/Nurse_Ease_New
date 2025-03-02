@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'voice_notes_screen.dart';
 import 'patient_info_screen.dart';
 import 'tasks_screen.dart';
@@ -7,8 +6,30 @@ import 'ai_help_screen.dart';
 import 'notification_screen.dart';
 import 'settings_screen.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  _DashboardScreenState createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  List<Map<String, String>> patients = [
+    {
+      'name': 'John Doe',
+      'room': '101',
+      'age': '65',
+      'diagnosis': 'Hypertension',
+      
+    },
+    {
+      'name': 'Alice Smith',
+      'room': '102',
+      'age': '72',
+      'diagnosis': 'Diabetes',
+      
+    },
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -18,21 +39,13 @@ class DashboardScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const NotificationScreen()),
-              );
-            },
+            onPressed: () => Navigator.push(context,
+                MaterialPageRoute(builder: (context) => const NotificationScreen())),
           ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
-              );
-            },
+            onPressed: () => Navigator.push(
+                context, MaterialPageRoute(builder: (context) => const SettingsScreen())),
           ),
         ],
       ),
@@ -50,39 +63,26 @@ class DashboardScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildShortcut(context, Icons.mic_none, 'Voice Notes', Colors.blue, const VoiceNotesScreen()),
-                _buildShortcut(context, Icons.check_circle_outline, 'Tasks', Colors.green, const TasksScreen()),
-                _buildShortcut(context, Icons.chat_bubble_outline, 'AI Help', Colors.orange, const AIHelpScreen()),
+                _buildShortcut(context, Icons.mic_none, 'Voice Notes', Colors.blue,
+                    const VoiceNotesScreen()),
+                _buildShortcut(context, Icons.check_circle_outline, 'Tasks', Colors.green,
+                    const TasksScreen()),
+                _buildShortcut(context, Icons.chat_bubble_outline, 'AI Help', Colors.orange,
+                    const AIHelpScreen()),
               ],
             ),
             const SizedBox(height: 20),
-            const Text('My Patients', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text('My Patients',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             Expanded(
-              child: StreamBuilder(
-                stream: FirebaseFirestore.instance.collection('patients').snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) return const CircularProgressIndicator();
-                  var patients = snapshot.data!.docs;
-                  return ListView.builder(
-                    itemCount: patients.length,
-                    itemBuilder: (context, index) {
-                      var patient = patients[index];
-                      return _buildPatientCard(
-                        context,
-                        patient.id,
-                        patient['name'],
-                        patient['room'],
-                        patient['age'].toString(),
-                        patient['status'],
-                        Colors.redAccent,
-                        patient['diagnosis'],
-                        patient['progress'],
-                        patient['vitals'],
-                      );
-                    },
-                  );
-                },
-              ),
+              child: patients.isEmpty
+                  ? const Center(child: Text("No patients found."))
+                  : ListView.builder(
+                      itemCount: patients.length,
+                      itemBuilder: (context, index) {
+                        return _buildPatientCard(context, index, patients[index]);
+                      },
+                    ),
             ),
           ],
         ),
@@ -90,11 +90,11 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildShortcut(BuildContext context, IconData icon, String label, Color color, Widget screen) {
+  Widget _buildShortcut(
+      BuildContext context, IconData icon, String label, Color color, Widget screen) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => screen));
-      },
+      onTap: () => Navigator.push(
+          context, MaterialPageRoute(builder: (context) => screen)),
       child: Column(
         children: [
           CircleAvatar(
@@ -109,63 +109,57 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPatientCard(BuildContext context, String id, String name, String room, String age, String status, Color statusColor, String diagnosis, String progress, String vitals) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PatientInfoScreen(
-              name: name,
-              room: room,
-              age: age,
-              status: status,
-              statusColor: statusColor,
-              diagnosis: diagnosis,
-              progress: progress,
-              vitals: vitals,
-            ),
-          ),
-        );
-      },
-      child: Card(
-        child: ListTile(
-          title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: Text('Room $room · Age $age'),
-          trailing: IconButton(
-            icon: const Icon(Icons.delete, color: Colors.red),
-            onPressed: () {
-              FirebaseFirestore.instance.collection('patients').doc(id).delete();
-            },
-          ),
+  Widget _buildPatientCard(BuildContext context, int index, Map<String, String> patient) {
+    return Card(
+      child: ListTile(
+        title: Text(patient['name'] ?? '',
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text('Room ${patient['room']} · Age ${patient['age']}'),
+        trailing: IconButton(
+          icon: const Icon(Icons.delete, color: Colors.red),
+          onPressed: () {
+            setState(() {
+              patients.removeAt(index);
+            });
+          },
         ),
+        onTap: () {
+          print("Navigating to PatientInfoScreen with data: ${patient.toString()}");
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PatientInfoScreen(patient: Map.from(patient)),
+            ),
+          );
+        },
       ),
     );
   }
 
   void _showAddPatientDialog(BuildContext context) {
-    final TextEditingController nameController = TextEditingController();
-    final TextEditingController roomController = TextEditingController();
-    final TextEditingController ageController = TextEditingController();
-    final TextEditingController diagnosisController = TextEditingController();
-    final TextEditingController progressController = TextEditingController();
-    final TextEditingController vitalsController = TextEditingController();
-    
+    final nameController = TextEditingController();
+    final roomController = TextEditingController();
+    final ageController = TextEditingController();
+    final diagnosisController = TextEditingController();
+    final progressController = TextEditingController();
+    final bpController = TextEditingController();
+
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text("Add New Patient"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Name')),
-              TextField(controller: roomController, decoration: const InputDecoration(labelText: 'Room')),
-              TextField(controller: ageController, decoration: const InputDecoration(labelText: 'Age'), keyboardType: TextInputType.number),
-              TextField(controller: diagnosisController, decoration: const InputDecoration(labelText: 'Diagnosis')),
-              TextField(controller: progressController, decoration: const InputDecoration(labelText: 'Progress')),
-              TextField(controller: vitalsController, decoration: const InputDecoration(labelText: 'Vitals')),
-            ],
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Name')),
+                TextField(controller: roomController, decoration: const InputDecoration(labelText: 'Room')),
+                TextField(controller: ageController, decoration: const InputDecoration(labelText: 'Age'), keyboardType: TextInputType.number),
+                TextField(controller: diagnosisController, decoration: const InputDecoration(labelText: 'Diagnosis')),
+        
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -174,16 +168,23 @@ class DashboardScreen extends StatelessWidget {
             ),
             ElevatedButton(
               onPressed: () {
-                FirebaseFirestore.instance.collection('patients').add({
-                  'name': nameController.text,
-                  'room': roomController.text,
-                  'age': int.parse(ageController.text),
-                  'status': 'Stable',
-                  'diagnosis': diagnosisController.text,
-                  'progress': progressController.text,
-                  'vitals': vitalsController.text,
-                  'createdAt': FieldValue.serverTimestamp(),
+                if (nameController.text.isEmpty || roomController.text.isEmpty || ageController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Please fill all required fields!")),
+                  );
+                  return;
+                }
+
+                setState(() {
+                  patients = List.from(patients)..add({
+                    'name': nameController.text,
+                    'room': roomController.text,
+                    'age': ageController.text,
+                    'diagnosis': diagnosisController.text,
+                    
+                  });
                 });
+
                 Navigator.pop(context);
               },
               child: const Text("Add"),
